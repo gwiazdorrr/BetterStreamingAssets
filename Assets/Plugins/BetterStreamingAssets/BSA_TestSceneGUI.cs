@@ -18,93 +18,56 @@ namespace Better.StreamingAssets
 {
     public class BSA_TestSceneGUI : MonoBehaviour
     {
-        private class CoroutineHost : MonoBehaviour { }
-
         public UnityEngine.UI.Text InProgressText;
         public string EditorApkPath = "BetterStreamingAssetsTest.apk";
+        public int RepetitionCount = 10;
+        public bool LogToFile = false;
 
-        public const string TestDirName = "BSATest";
-        //public const string TestPath = "Assets/StreamingAssets/" + TestDirName;
+        private class CoroutineHost : MonoBehaviour { }
 
-        private string m_status;
+        private class TestInfo
+        {
+            public ReadMode readMode;
+            public TestType testType;
+            public string path;
+            public int attempts;
+            public Exception error;
+            public TimeSpan duration;
+            public long bytesRead;
+            public long memoryPeak;
+            public long maxMemoryPeak;
+        }
+
+
+        private delegate void TestResultDelegate(TimeSpan avgDuration, long avgBytesRead, long avgMemoryPeak, long maxMemoryPeak, string[] assetNames);
 
         [Flags]
         private enum ReadMode
         {
             BSA = 1 << 0,
             WWW = 1 << 1,
-            Resource = 1 << 2,
-            ResourceAsync = 1 << 3,
-            BSABuffered = 1 << 4,
             Direct = 1 << 5,
         }
 
+        [Flags]
         private enum TestType
         {
             CheckIfExists = 1 << 0,
             LoadBytes = 1 << 1,
-            LoadAssetBundleHeader = 1 << 2,
-            LoadAssetBundleContents = 1 << 3,
-            //LoadAssetBundleHeaderAsync,
         }
 
+        private string m_status = string.Empty;
         private TestType m_testModes = TestType.CheckIfExists;
         private ReadMode m_readModes = ReadMode.WWW;
-
-        private void DoTestTypeToggle(TestType testMode)
-        {
-            bool wasSet = (m_testModes & testMode) == testMode;
-            if (GUILayout.Toggle(wasSet, testMode.ToString()))
-            {
-                m_testModes |= testMode;
-            }
-            else if (wasSet)
-            {
-                if (m_testModes != testMode)
-                    m_testModes &= ~testMode;
-            }
-        }
-
-        private void DoReadModeToggle(ReadMode readMode)
-        {
-            bool wasSet = (m_readModes & readMode) == readMode;
-            if (GUILayout.Toggle(wasSet, readMode.ToString()))
-            {
-                m_readModes |= readMode;
-            }
-            else if (wasSet)
-            {
-                if (m_readModes != readMode)
-                    m_readModes &= ~readMode;
-            }
-        }
-
-        const float VerticalSpace = 10.0f;
-
         private CoroutineHost coroutineHost;
-
 
         private Vector2 m_assetsScroll;
         private Vector2 m_resultsScroll;
-        public int RepetitionCount = 10;
-        public string SelectedPath;
 
         private string[] m_allStreamingAssets;
         private List<TestInfo> m_results = new List<TestInfo>();
+        private HashSet<string> m_selectedPaths = new HashSet<string>();
 
-        private string StreamingAssetsPath
-        {
-            get
-            {
-#if UNITY_EDITOR
-                if (BetterStreamingAssets.Root == EditorApkPath)
-                {
-                    return "jar:" + new Uri(EditorApkPath).AbsoluteUri + "!/assets";
-                }
-#endif
-                return Application.streamingAssetsPath;
-            }
-        }
 
         void OnEnable()
         {
@@ -149,7 +112,8 @@ namespace Better.StreamingAssets
 
                 if (m_allStreamingAssets.Length == 0)
                 {
-                    GUILayout.Label("No streaming assets? Use Assets->Better Streaming Assets menu item in the Editor");
+                    GUILayout.Label("No streaming assets found in " + BetterStreamingAssets.Root);
+                    return;
                 }
 
                 GUILayout.Label("Using " + BetterStreamingAssets.Root);
@@ -160,17 +124,21 @@ namespace Better.StreamingAssets
                     m_assetsScroll = scope.scrollPosition;
                     foreach (var path in m_allStreamingAssets)
                     {
-                        if (GUILayout.Button(path))
-                            SelectedPath = path;
+                        var wasSelected = m_selectedPaths.Contains(path);
+                        if (GUILayout.Toggle(wasSelected, path))
+                        {
+                            if (!wasSelected)
+                                m_selectedPaths.Add(path);
+                        }
+                        else
+                        {
+                            if (wasSelected)
+                                m_selectedPaths.Remove(path);
+                        }
                     }
                 }
 
-                using (new GUILayout.HorizontalScope())
-                {
-                    GUILayout.Label("Selected path:", GUILayout.Width(150.0f));
-                    SelectedPath = GUILayout.TextField(SelectedPath);
-                }
-
+                const float VerticalSpace = 10.0f;
                 GUILayout.Space(VerticalSpace);
 
                 using (new GUILayout.HorizontalScope())
@@ -179,6 +147,8 @@ namespace Better.StreamingAssets
                     RepetitionCount = Mathf.RoundToInt(GUILayout.HorizontalSlider((float)RepetitionCount, 1.0f, 20.0f));
                 }
 
+                LogToFile = GUILayout.Toggle(LogToFile, "Log results to file");
+
                 GUILayout.Space(VerticalSpace);
 
                 using (new GUILayout.HorizontalScope())
@@ -186,13 +156,7 @@ namespace Better.StreamingAssets
                     GUILayout.Label("Test modes: ", GUILayout.Width(150.0f));
                     DoTestTypeToggle(TestType.CheckIfExists);
                     DoTestTypeToggle(TestType.LoadBytes);
-                    DoTestTypeToggle(TestType.LoadAssetBundleHeader);
-                    DoTestTypeToggle(TestType.LoadAssetBundleContents);
                 }
-
-                //DoModeToggle(TestType.LoadAssetBundleHeaderAsync);
-
-                //dontReleaseBundle = GUILayout.Toggle(dontReleaseBundle, "DONT RELEASE LAST");
 
                 GUILayout.Space(VerticalSpace);
 
@@ -200,34 +164,18 @@ namespace Better.StreamingAssets
                 {
                     GUILayout.Label("Read modes: ", GUILayout.Width(150.0f));
                     DoReadModeToggle(ReadMode.BSA);
-                    DoReadModeToggle(ReadMode.BSABuffered);
                     DoReadModeToggle(ReadMode.WWW);
-                    DoReadModeToggle(ReadMode.Resource);
+#if !UNITY_ANDROID || UNITY_EDITOR
                     DoReadModeToggle(ReadMode.Direct);
-                    // DoReadModeToggle(ReadMode.ResourceAsync);
+#endif
                 }
 
-                GUI.enabled = !string.IsNullOrEmpty(SelectedPath);
-                if (GUILayout.Button("Test Selected Path"))
+                GUI.enabled = m_selectedPaths.Count > 0;
+                if (GUILayout.Button("Test Selected Paths (" + m_selectedPaths.Count + ")"))
                 {
-                    coroutineHost.StartCoroutine(TestAllCoroutine(new[] { SelectedPath }, RepetitionCount, m_readModes, m_testModes, m_results));
+                    coroutineHost.StartCoroutine(TestAllCoroutine(m_selectedPaths.ToArray(), RepetitionCount, m_readModes, m_testModes, m_results));
                 }
                 GUI.enabled = true;
-
-                if (GUILayout.Button("Test Raw Files"))
-                {
-                    coroutineHost.StartCoroutine(TestAllCoroutine(m_allStreamingAssets.Where(x => Path.GetFileName(x).StartsWith("raw_")), RepetitionCount, m_readModes, m_testModes & (~(TestType.LoadAssetBundleHeader | TestType.LoadAssetBundleContents)), m_results));
-                }
-
-                if (GUILayout.Button("Test Bundles"))
-                {
-                    coroutineHost.StartCoroutine(TestAllCoroutine(m_allStreamingAssets.Where(x => Path.GetFileName(x).StartsWith("bundle_")), RepetitionCount, m_readModes, m_testModes, m_results));
-                }
-
-                if (GUILayout.Button("Test Bundles (Textures)"))
-                {
-                    coroutineHost.StartCoroutine(TestAllCoroutine(m_allStreamingAssets.Where(x => Path.GetFileName(x).StartsWith("bundle_tex")), RepetitionCount, m_readModes, m_testModes, m_results));
-                }
 
                 GUILayout.Box(m_status);
 
@@ -264,6 +212,20 @@ namespace Better.StreamingAssets
             }
         }
 
+        private string StreamingAssetsPath
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (BetterStreamingAssets.Root == EditorApkPath)
+                {
+                    return "jar:" + new Uri(EditorApkPath).AbsoluteUri + "!/assets";
+                }
+#endif
+                return Application.streamingAssetsPath;
+            }
+        }
+
         private void Initialize()
         {
             m_allStreamingAssets = BetterStreamingAssets.GetFiles("/", "*", SearchOption.AllDirectories);
@@ -275,8 +237,33 @@ namespace Better.StreamingAssets
             Debug.LogFormat("Allocated {0}, mono heap size: {1}", bytes.Length, Profiler.GetMonoHeapSizeLong());
         }
 
+        private void DoTestTypeToggle(TestType testMode)
+        {
+            bool wasSet = (m_testModes & testMode) == testMode;
+            if (GUILayout.Toggle(wasSet, testMode.ToString()))
+            {
+                m_testModes |= testMode;
+            }
+            else if (wasSet)
+            {
+                if (m_testModes != testMode)
+                    m_testModes &= ~testMode;
+            }
+        }
 
-        private delegate void TestResultDelegate(TimeSpan avgDuration, long avgBytesRead, long avgMemoryPeak, long maxMemoryPeak, string[] assetNames);
+        private void DoReadModeToggle(ReadMode readMode)
+        {
+            bool wasSet = (m_readModes & readMode) == readMode;
+            if (GUILayout.Toggle(wasSet, readMode.ToString()))
+            {
+                m_readModes |= readMode;
+            }
+            else if (wasSet)
+            {
+                if (m_readModes != readMode)
+                    m_readModes &= ~readMode;
+            }
+        }
 
         private void Test(ReadMode readMode, string path, TestType testType, int attempts)
         {
@@ -307,21 +294,6 @@ namespace Better.StreamingAssets
                 }
             ));
         }
-
-
-        private class TestInfo
-        {
-            public ReadMode readMode;
-            public TestType testType;
-            public string path;
-            public int attempts;
-            public Exception error;
-            public TimeSpan duration;
-            public long bytesRead;
-            public long memoryPeak;
-            public long maxMemoryPeak;
-        }
-
 
         private IEnumerator TestAllCoroutine(IEnumerable<string> paths, int attempts, ReadMode readModes, TestType testTypes, List<TestInfo> results)
         {
@@ -377,23 +349,25 @@ namespace Better.StreamingAssets
             {
                 enabled = true;
 
-                using (var writer = File.CreateText(logPath))
+                if (LogToFile)
                 {
-                    foreach (var result in results)
+                    using (var writer = File.CreateText(logPath))
                     {
-                        string errorMessage = string.Empty;
-                        if (result.error != null)
-                            errorMessage = result.error.ToString().Replace(Environment.NewLine, ";");
+                        foreach (var result in results)
+                        {
+                            string errorMessage = string.Empty;
+                            if (result.error != null)
+                                errorMessage = result.error.ToString().Replace(Environment.NewLine, ";");
 
-                        writer.WriteLine("\"{0}\"\t{1}\t{2}\t{3}\t{4}\t\"{5}\"", result.path, result.readMode, result.testType, result.duration, result.memoryPeak, errorMessage);
+                            writer.WriteLine("\"{0}\"\t{1}\t{2}\t{3}\t{4}\t\"{5}\"", result.path, result.readMode, result.testType, result.duration, result.memoryPeak, errorMessage);
+                        }
                     }
-                }
 
-                LogWorkProgress("Logged at: " + logPath);
+                    LogWorkProgress("Logged at: " + logPath);
+                }
             }
 
         }
-
 
         private void LogWorkProgress(string status)
         {
@@ -443,8 +417,6 @@ namespace Better.StreamingAssets
 
             for (int i = 0; i < attempts; ++i)
             {
-                AssetBundle bundle = null;
-                UnityEngine.Object[] resources = null;
                 WWW www = null;
 
                 yield return Resources.UnloadUnusedAssets();
@@ -456,59 +428,7 @@ namespace Better.StreamingAssets
                 //var memoryMonoBefore = Profiler.GetMonoUsedSizeLong();
                 stopwatch.Start();
 
-                if (readMode == ReadMode.Resource || readMode == ReadMode.ResourceAsync)
-                {
-                    if (readMode == ReadMode.ResourceAsync)
-                    {
-                        var op = Resources.LoadAsync(resourcesPath);
-                        yield return op;
-                        if (op.asset != null)
-                        {
-                            resources = new UnityEngine.Object[] { op.asset };
-                        }
-                        else
-                        {
-                            resources = new UnityEngine.Object[0];
-                        }
-                    }
-                    else
-                    {
-                        resources = Resources.LoadAll(resourcesPath);
-                    }
-
-                    Profiler.BeginSample(testType.ToString());
-
-                    switch (testType)
-                    {
-                        case TestType.CheckIfExists:
-                            if (resources.Length == 0)
-                                throw new InvalidOperationException();
-                            break;
-                        case TestType.LoadBytes:
-                            bytesRead += ((TextAsset)resources[0]).bytes.Length;
-                            break;
-                        case TestType.LoadAssetBundleHeader:
-                            bundle = AssetBundle.LoadFromMemory(((TextAsset)resources[0]).bytes);
-                            if (bundle == null)
-                                throw new InvalidOperationException("Failed to load bundle: " + path);
-                            break;
-                        case TestType.LoadAssetBundleContents:
-                            bundle = AssetBundle.LoadFromMemory(((TextAsset)resources[0]).bytes);
-                            if (bundle == null)
-                                throw new InvalidOperationException("Failed to load bundle: " + path);
-
-                            var allAssets = bundle.LoadAllAssets();
-                            if (allAssets.Length == 0)
-                                throw new InvalidOperationException();
-
-                            break;
-                        default:
-                            throw new NotSupportedException();
-                    }
-
-                    Profiler.EndSample();
-                }
-                else if (readMode == ReadMode.WWW)
+                if (readMode == ReadMode.WWW)
                 {
                     www = new WWW(streamingAssetsUrl);
 
@@ -526,28 +446,6 @@ namespace Better.StreamingAssets
                             case TestType.LoadBytes:
                                 bytesRead += www.bytes.Length;
                                 break;
-                            case TestType.LoadAssetBundleHeader:
-                                Profiler.BeginSample("Getting Bundle");
-                                bundle = www.assetBundle;
-                                if (bundle == null)
-                                    throw new InvalidOperationException("Failed to load bundle: " + path);
-                                assetNames = bundle.GetAllAssetNames();
-                                Profiler.EndSample();
-                                break;
-                            case TestType.LoadAssetBundleContents:
-                                Profiler.BeginSample("Getting Bundle");
-                                bundle = www.assetBundle;
-                                if (bundle == null)
-                                    throw new InvalidOperationException("Failed to load bundle: " + path);
-                                assetNames = bundle.GetAllAssetNames();
-                                Profiler.EndSample();
-
-                                Profiler.BeginSample("Reading Assets");
-                                var allAssets = bundle.LoadAllAssets();
-                                if (allAssets.Length == 0)
-                                    throw new InvalidOperationException();
-                                Profiler.EndSample();
-                                break;
 
                             default:
                                 throw new NotSupportedException();
@@ -557,7 +455,7 @@ namespace Better.StreamingAssets
 
 
                 }
-                else if (readMode == ReadMode.BSA || readMode == ReadMode.BSABuffered)
+                else if (readMode == ReadMode.BSA)
                 {
                     Profiler.BeginSample(testType.ToString());
 
@@ -570,57 +468,6 @@ namespace Better.StreamingAssets
                         case TestType.LoadBytes:
                             bytesRead += BetterStreamingAssets.ReadAllBytes(path).Length;
                             break;
-                        case TestType.LoadAssetBundleHeader:
-                            Profiler.BeginSample("Getting Bundle");
-                            if (readMode == ReadMode.BSA)
-                            {
-                                bundle = BetterStreamingAssets.LoadAssetBundle(path);
-                            }
-                            else
-                            {
-                                bundle = AssetBundle.LoadFromMemory(BetterStreamingAssets.ReadAllBytes(path));
-                            }
-
-                            if (bundle == null)
-                                throw new InvalidOperationException("Failed to load bundle: " + path);
-
-                            assetNames = bundle.GetAllAssetNames();
-                            Profiler.EndSample();
-                            break;
-                        case TestType.LoadAssetBundleContents:
-                            Profiler.BeginSample("Getting Bundle");
-                            if (readMode == ReadMode.BSA)
-                            {
-                                bundle = BetterStreamingAssets.LoadAssetBundle(path);
-                            }
-                            else
-                            {
-                                bundle = AssetBundle.LoadFromMemory(BetterStreamingAssets.ReadAllBytes(path));
-                            }
-
-                            if (bundle == null)
-                                throw new InvalidOperationException("Failed to load bundle: " + path);
-
-                            assetNames = bundle.GetAllAssetNames();
-                            Profiler.EndSample();
-
-                            Profiler.BeginSample("Reading Assets");
-                            var allAssets = bundle.LoadAllAssets();
-                            if (allAssets.Length == 0)
-                                throw new InvalidOperationException();
-                            Profiler.EndSample();
-                            break;
-
-                            //case TestType.LoadAssetBundleHeaderAsync:
-                            //    var op = BetterStreamingAssets.LoadAssetBundleAsync(path);
-                            //    Profiler.EndSample();
-                            //    yield return op;
-                            //    Profiler.BeginSample(testType.ToString());
-                            //    Profiler.BeginSample("Getting Bundle");
-                            //    bundle = op.assetBundle;
-                            //    Profiler.EndSample();
-                            //    break;
-
                     }
 
                     Profiler.EndSample();
@@ -634,37 +481,11 @@ namespace Better.StreamingAssets
                     switch (testType)
                     {
                         case TestType.CheckIfExists:
-                            throw new NotSupportedException();
-                        case TestType.LoadBytes:
-                            throw new NotSupportedException();
-                        case TestType.LoadAssetBundleHeader:
-                            Profiler.BeginSample("Getting Bundle");
-                            bundle = AssetBundle.LoadFromFile(p);
-
-                            if (bundle == null)
-                            {
-                                Debug.Log("FAILED  TO LOAD " + p);
-                                throw new InvalidOperationException("Failed to load bundle: " + p);
-                            }
-
-                            assetNames = bundle.GetAllAssetNames();
-                            Profiler.EndSample();
+                            if (!File.Exists(p))
+                                throw new System.InvalidOperationException();
                             break;
-                        case TestType.LoadAssetBundleContents:
-                            Profiler.BeginSample("Getting Bundle");
-                            bundle = AssetBundle.LoadFromFile(p);
-
-                            if (bundle == null)
-                                throw new InvalidOperationException("Failed to load bundle: " + p);
-
-                            assetNames = bundle.GetAllAssetNames();
-                            Profiler.EndSample();
-
-                            Profiler.BeginSample("Reading Assets");
-                            var allAssets = bundle.LoadAllAssets();
-                            if (allAssets.Length == 0)
-                                throw new InvalidOperationException();
-                            Profiler.EndSample();
+                        case TestType.LoadBytes:
+                            bytesRead += File.ReadAllBytes(p).Length;
                             break;
                     }
 
@@ -679,23 +500,6 @@ namespace Better.StreamingAssets
                 totalMemoryPeaks += memoryPeak;
 
                 yield return null;
-
-                if (bundle != null)
-                {
-                    Profiler.BeginSample("Bundle clean up");
-                    bundle.Unload(true);
-                    Profiler.EndSample();
-                }
-
-                if (resources != null)
-                {
-                    foreach (var res in resources)
-                    {
-                        Profiler.BeginSample("Unloading resource");
-                        Resources.UnloadAsset(res);
-                        Profiler.EndSample();
-                    }
-                }
 
                 if (www != null)
                     www.Dispose();

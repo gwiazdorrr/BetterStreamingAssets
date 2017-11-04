@@ -79,6 +79,21 @@ public static class BetterStreamingAssets
         return BetterStreamingAssetsImp.OpenRead(path);
     }
 
+    public static System.IO.StreamReader OpenText(string path)
+    {
+        Stream str = OpenRead(path);
+        try
+        {
+            return new StreamReader(str);
+        }
+        catch (System.Exception)
+        {
+            if (str != null)
+                str.Dispose();
+            throw;
+        }
+    }
+
     public static byte[] ReadAllBytes(string path)
     {
         return BetterStreamingAssetsImp.ReadAllBytes(path);
@@ -87,6 +102,16 @@ public static class BetterStreamingAssets
     public static string[] GetFiles(string path, string searchPattern, SearchOption searchOption)
     {
         return BetterStreamingAssetsImp.GetFiles(path, searchPattern, searchOption);
+    }
+
+    public static string[] GetFiles(string path)
+    {
+        return GetFiles(path, null);
+    }
+
+    public static string[] GetFiles(string path, string searchPattern)
+    {
+        return GetFiles(path, searchPattern, SearchOption.TopDirectoryOnly);
     }
 
     private static ReadInfo GetInfoOrThrow(string path)
@@ -170,6 +195,7 @@ public static class BetterStreamingAssets
     internal static class LooseFilesImpl
     {
         public static string s_root;
+        private static string[] s_emptyArray = new string[0];
 
         public static void Initialize(string dataPath, string streamingAssetsPath)
         {
@@ -178,6 +204,9 @@ public static class BetterStreamingAssets
 
         public static string[] GetFiles(string path, string searchPattern, SearchOption searchOption)
         {
+            if (!Directory.Exists(s_root))
+                return s_emptyArray;
+
             // this will throw if something is fishy
             PathUtil.NormalizeRelativePath(path, forceTrailingSlash : true);
 

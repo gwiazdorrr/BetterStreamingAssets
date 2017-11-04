@@ -20,7 +20,7 @@ namespace Better.StreamingAssets
         private const int TexturesCount = 2;
         private const int BundlesTypesCount = 3;
 
-        private const string TestDirName = BSA_TestSceneGUI.TestDirName;
+        private const string TestDirName = "BSATest";
         private const string TestPath = "Assets/StreamingAssets/" + TestDirName;
         private const string TestResourcesPath = "Assets/Resources/" + TestDirName;
         private const int TestFiles = SizesCount * 2 + SizesCount * 2 * BundlesTypesCount + TexturesCount * BundlesTypesCount + TexturesCount;
