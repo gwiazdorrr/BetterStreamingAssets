@@ -76,6 +76,11 @@ public static class BetterStreamingAssets
 
     public static System.IO.Stream OpenRead(string path)
     {
+        if ( path == null )
+            throw new ArgumentNullException("path");
+        if ( path.Length == 0 )
+            throw new ArgumentException("Empty path", "path");
+
         return BetterStreamingAssetsImp.OpenRead(path);
     }
 
@@ -94,8 +99,37 @@ public static class BetterStreamingAssets
         }
     }
 
+    public static string ReadAllText(string path)
+    {
+        using ( var sr = OpenText(path) )
+        {
+            return sr.ReadToEnd();
+        }
+    }
+
+    public static string[] ReadAllLines(string path)
+    {
+        string line;
+        var lines = new List<string>();
+
+        using ( var sr = OpenText(path) )
+        {
+            while ( ( line = sr.ReadLine() ) != null )
+            {
+                lines.Add(line);
+            }
+        }
+
+        return lines.ToArray();
+    }
+
     public static byte[] ReadAllBytes(string path)
     {
+        if ( path == null )
+            throw new ArgumentNullException("path");
+        if ( path.Length == 0 )
+            throw new ArgumentException("Empty path");
+
         return BetterStreamingAssetsImp.ReadAllBytes(path);
     }
 
