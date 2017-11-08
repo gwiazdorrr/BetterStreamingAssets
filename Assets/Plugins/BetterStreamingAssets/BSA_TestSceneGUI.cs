@@ -409,7 +409,6 @@ namespace Better.StreamingAssets
             string[] assetNames = null;
 
             var streamingAssetsUrl = Path.Combine(StreamingAssetsPath, path).Replace('\\', '/');
-            var resourcesPath = path;
 
             long bytesRead = 0;
             long maxMemoryPeak = 0;

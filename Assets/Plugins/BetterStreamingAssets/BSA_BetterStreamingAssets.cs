@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Better Streaming Assets, Piotr Gwiazdowski <gwiazdorrr+github at gmail.com>, 2017
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
