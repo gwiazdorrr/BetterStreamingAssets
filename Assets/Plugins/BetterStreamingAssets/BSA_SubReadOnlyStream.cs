@@ -143,7 +143,7 @@ namespace Better.StreamingAssets
                 if (m_actualStream != null)
                 {
                     if (!m_leaveOpen)
-                        m_actualStream.Close();
+                        m_actualStream.Dispose();
 
                     m_actualStream = null;
                 }
