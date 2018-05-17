@@ -69,10 +69,19 @@ namespace Better.StreamingAssets
 
             NormalizeState state = NormalizeState.PrevSlash;
             output.Append('/');
-            
-            for ( int i = 0; i <= relative.Length; ++i )
+
+            int startIndex = 0;
+            int lastIndexPlus1 = relative.Length;
+
+            if ( relative[0] == '"' && relative.Length > 2 && relative[relative.Length - 1] == '"')
             {
-                if (i == relative.Length || relative[i] == Path.DirectorySeparatorChar || relative[i] == Path.AltDirectorySeparatorChar)
+                startIndex++;
+                lastIndexPlus1--;
+            }
+
+            for ( int i = startIndex; i <= lastIndexPlus1; ++i )
+            {
+                if (i == lastIndexPlus1 || relative[i] == Path.DirectorySeparatorChar || relative[i] == Path.AltDirectorySeparatorChar)
                 {
                     if ( state == NormalizeState.PrevSlash || state == NormalizeState.PrevDot )
                     {
@@ -91,7 +100,7 @@ namespace Better.StreamingAssets
 
                         output.Remove(j + 1, output.Length - j - 1);
                     }
-                    else if ( i < relative.Length || forceTrailingSlash )
+                    else if ( i < lastIndexPlus1 || forceTrailingSlash )
                     {
                         output.Append('/');
                     }
