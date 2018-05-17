@@ -6,7 +6,7 @@ Better Streaming Assets is a plugin that lets you access Streaming Assets direct
 
 Initialization (before first use, needs to be called on main thread):
 
-    BetterStreaminAssets.Initialize();
+    BetterStreamingAssets.Initialize();
 
 Typical scenario, deserializing from Xml:
 
@@ -30,7 +30,7 @@ Note that ReadFromXml can be called from any thread, as long as Foo's constructo
 Listing all Streaming Assets in with .xml extension:
 
     // all the xmls
-    string[] paths = BetterStreamingAssets.GetFiles("\", "*.xml", SearchOption.AllDirectories); 
+    string[] paths = BetterStreamingAssets.GetFiles("\\", "*.xml", SearchOption.AllDirectories); 
     // just xmls in Config directory (and nested)
     string[] paths = BetterStreamingAssets.GetFiles("Config", "*.xml", SearchOption.AllDirectories); 
 
