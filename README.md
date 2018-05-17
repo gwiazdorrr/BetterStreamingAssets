@@ -2,6 +2,18 @@
 
 Better Streaming Assets is a plugin that lets you access Streaming Assets directly in an uniform and thread-safe way, with tiny overhead. Mostly beneficial for Android projects, where the alternatives are to use archaic and hugely inefficient WWW or embed data in Asset Bundles. API is based on Syste.IO.File and System.IO.Directory classes.
 
+# Usage
+
+Check examples below. Note that all the paths are relative to StreamingAssets directory. That is, if you have files
+
+    <project>/Assets/StreamingAssets/foo.bar
+    <project>/Assets/StreamingAssets/dir/foo.bar
+
+You are expected to use following paths:
+
+    foo.bar (or /foo.bar)
+    dir/foo.bar (or /dir/foo.bar)
+
 # Examples
 
 Initialization (before first use, needs to be called on main thread):
