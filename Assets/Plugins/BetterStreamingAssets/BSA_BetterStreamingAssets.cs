@@ -130,7 +130,7 @@ public static class BetterStreamingAssets
         if ( path == null )
             throw new ArgumentNullException("path");
         if ( path.Length == 0 )
-            throw new ArgumentException("Empty path");
+            throw new ArgumentException("Empty path", "path");
 
         return BetterStreamingAssetsImp.ReadAllBytes(path);
     }
@@ -377,7 +377,7 @@ public static class BetterStreamingAssets
         public static string[] GetFiles(string path, string searchPattern, SearchOption searchOption)
         {
             if ( path == null )
-                throw new ArgumentException("path");
+                throw new ArgumentNullException("path");
 
             var actualDirPath = PathUtil.NormalizeRelativePath(path, forceTrailingSlash : true);
 
