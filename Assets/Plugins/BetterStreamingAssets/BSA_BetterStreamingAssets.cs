@@ -235,7 +235,7 @@ public static class BetterStreamingAssets
 
         public static void Initialize(string dataPath, string streamingAssetsPath)
         {
-            s_root = Path.GetFullPath(streamingAssetsPath + "/").Replace("\\", "/"); ;
+            s_root = Path.GetFullPath(streamingAssetsPath).Replace('\\', '/').TrimEnd('/');
         }
 
         public static string[] GetFiles(string path, string searchPattern, SearchOption searchOption)
@@ -244,15 +244,16 @@ public static class BetterStreamingAssets
                 return s_emptyArray;
 
             // this will throw if something is fishy
-            PathUtil.NormalizeRelativePath(path, forceTrailingSlash : true);
+            path = PathUtil.NormalizeRelativePath(path, forceTrailingSlash : true);
 
-            Debug.Assert(s_root.Last() == '\\' || s_root.Last() == '/');
+            Debug.Assert(s_root.Last() != '\\' && s_root.Last() != '/' && path.StartsWith("/"));
+
             var files = Directory.GetFiles(s_root + path, searchPattern ?? "*", searchOption);
 
             for ( int i = 0; i < files.Length; ++i )
             {
                 Debug.Assert(files[i].StartsWith(s_root));
-                files[i] = files[i].Substring(s_root.Length).Replace('\\', '/');
+                files[i] = files[i].Substring(s_root.Length + 1).Replace('\\', '/');
             }
 
 #if UNITY_EDITOR
@@ -324,7 +325,7 @@ public static class BetterStreamingAssets
 #endif
 
 #if UNITY_EDITOR || UNITY_ANDROID
-    internal static class ApkImpl
+        internal static class ApkImpl
     {
         private static string[] s_paths;
         private static PartInfo[] s_streamingAssets;

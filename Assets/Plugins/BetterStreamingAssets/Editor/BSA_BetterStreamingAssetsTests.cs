@@ -340,7 +340,8 @@ namespace Better.StreamingAssets
 
         private static string[] GetRealFiles(string nested, string pattern, SearchOption so, bool dirs = false)
         {
-            var dir = "Assets/StreamingAssets/" + nested + "/";
+            var saDir = Path.GetFullPath("Assets/StreamingAssets/");
+            var dir = Path.GetFullPath(saDir + nested);
 
             if (!Directory.Exists(dir))
                 Assert.Inconclusive("Directory " + dir + " doesn't exist");
@@ -359,7 +360,7 @@ namespace Better.StreamingAssets
                     .ToList();
             }
 
-            var processedFiles = files.Select(x => x.Replace("Assets/StreamingAssets/", string.Empty).Replace("\\", "/"))
+            var processedFiles = files.Select(x => x.Replace(saDir, string.Empty).Replace("\\", "/"))
                 .ToArray();
 
             return processedFiles;
