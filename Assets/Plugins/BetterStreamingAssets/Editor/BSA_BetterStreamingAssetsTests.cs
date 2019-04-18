@@ -68,7 +68,6 @@ namespace Better.StreamingAssets
                     var tex = new Texture2D(2048, 2048, TextureFormat.RGBA32, true);
 
                     var pixels = tex.GetPixels32();
-                    float scale = 1.0f;
 
                     byte[] buffer = new byte[4];
 
