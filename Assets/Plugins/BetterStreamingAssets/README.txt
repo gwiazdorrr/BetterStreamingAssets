@@ -13,6 +13,19 @@ Support/Feedback: support@dmprog.pl
 Twitter:          @gwiazdorrr
 Support Page:     http://dmprog.pl/unity-plugins/
 
+
+Usage:
+------
+Check examples below. Note that all the paths are relative to StreamingAssets directory. That is, if you have files
+
+    <project>/Assets/StreamingAssets/foo.bar
+    <project>/Assets/StreamingAssets/dir/foo.bar
+
+You are expected to use following paths:
+
+    foo.bar (or /foo.bar)
+    dir/foo.bar (or /dir/foo.bar)
+
 Examples:
 ---------
 Initialization (before first use, needs to be called on main thread):
