@@ -59,7 +59,7 @@ Ways of reading a file:
     byte[] footer = new byte[10];
     using (var stream = BetterStreamingAssets.OpenRead("Foo/bar.data"))
     {
-        stream.Seek(footer.Length, SeekOrigin.End);
+        stream.Seek(-footer.Length, SeekOrigin.End);
         stream.Read(footer, 0, footer.Length);
     }
     
