@@ -325,7 +325,7 @@ public static class BetterStreamingAssets
 #endif
 
 #if UNITY_EDITOR || UNITY_ANDROID
-        internal static class ApkImpl
+    internal static class ApkImpl
     {
         private static string[] s_paths;
         private static PartInfo[] s_streamingAssets;
@@ -346,6 +346,17 @@ public static class BetterStreamingAssets
             List<PartInfo> parts = new List<PartInfo>();
 
             GetStreamingAssetsInfoFromJar(s_root, paths, parts);
+
+            if (paths.Count == 0 && !Application.isEditor && Path.GetFileName(dataPath) != "base.apk")
+            {
+                // maybe split?
+                var newDataPath = Path.GetDirectoryName(dataPath) + "/base.apk";
+                if (File.Exists(newDataPath))
+                {
+                    s_root = newDataPath;
+                    GetStreamingAssetsInfoFromJar(newDataPath, paths, parts);
+                }
+            }
 
             s_paths = paths.ToArray();
             s_streamingAssets = parts.ToArray();
@@ -562,6 +573,13 @@ public static class BetterStreamingAssets
                     {
                         if ( header.CompressedSize != header.UncompressedSize )
                         {
+#if UNITY_ASSERTIONS
+                            var fileName = Encoding.UTF8.GetString(header.Filename);
+                            if (fileName.StartsWith(prefix) && !fileName.StartsWith(assetsPrefix))
+                            {
+                                Debug.LogAssertionFormat("BetterStreamingAssets: file {0} seems to be a Streaming Asset, but is compressed. Ignoring.", fileName);
+                            }
+#endif
                             // we only want uncompressed files
                         }
                         else

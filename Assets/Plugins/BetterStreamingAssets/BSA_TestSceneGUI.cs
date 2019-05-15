@@ -66,7 +66,7 @@ namespace Better.StreamingAssets
         private Vector2 m_assetsScroll;
         private Vector2 m_resultsScroll;
 
-        private string[] m_allStreamingAssets;
+        private string[] m_allStreamingAssets = new string[0];
         private List<TestInfo> m_results = new List<TestInfo>();
         private HashSet<string> m_selectedPaths = new HashSet<string>();
 
@@ -266,36 +266,6 @@ namespace Better.StreamingAssets
                 if (m_readModes != readMode)
                     m_readModes &= ~readMode;
             }
-        }
-
-        private void Test(ReadMode readMode, string path, TestType testType, int attempts)
-        {
-            enabled = false;
-            coroutineHost.StartCoroutine(ErrorCatchingCoroutine(TestHarness(readMode, path, testType, attempts,
-                (duration, bytes, memory, maxMemory, names) =>
-                {
-                    enabled = true;
-                    LogWorkProgress("Retries: " + attempts);
-                    LogWorkProgress("Avg duration: " + duration);
-                    LogWorkProgress("Avg bytes read: " + bytes);
-                    LogWorkProgress("Avg memory peak: " + memory);
-                    LogWorkProgress("Max memory peak: " + maxMemory);
-
-                    if (names != null)
-                    {
-                        LogWorkProgress("Asset names:");
-                        foreach (var name in names)
-                        {
-                            LogWorkProgress("    " + name);
-                        }
-                    }
-                }),
-                ex =>
-                {
-                    enabled = true;
-                    LogWorkProgress(ex.ToString());
-                }
-            ));
         }
 
         private IEnumerator TestAllCoroutine(IEnumerable<string> paths, int attempts, ReadMode readModes, TestType testTypes, List<TestInfo> results)
