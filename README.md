@@ -4,7 +4,9 @@ Better Streaming Assets is a plugin that lets you access Streaming Assets direct
 
 # Note on Android & App Bundles
 
-App Bundles (.aab) builds are bugged when it comes to Streaming Assets (see https://github.com/gwiazdorrr/BetterStreamingAssets/issues/10 for details). **Make sure to keep all file names in Streaming Assets lowercase!**
+App Bundles (.aab) builds are bugged when it comes to Streaming Assets. See https://github.com/gwiazdorrr/BetterStreamingAssets/issues/10 for details. The bottom line is:
+
+⚠️ **Keep all file names in Streaming Assets lowercase!** ⚠️
 
 # Usage
 
