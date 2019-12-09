@@ -519,7 +519,7 @@ public static class BetterStreamingAssets
 
             // find first file there
             var index = Array.BinarySearch(s_paths, path, StringComparer.OrdinalIgnoreCase);
-            if ( index > 0 )
+            if ( index >= 0 )
                 return ~index;
 
             // if the end, no such directory exists
@@ -577,7 +577,7 @@ public static class BetterStreamingAssets
                             var fileName = Encoding.UTF8.GetString(header.Filename);
                             if (fileName.StartsWith(prefix) && !fileName.StartsWith(assetsPrefix))
                             {
-                                Debug.LogAssertionFormat("BetterStreamingAssets: file {0} seems to be a Streaming Asset, but is compressed. Ignoring.", fileName);
+                                Debug.LogAssertionFormat("BetterStreamingAssets: file {0} seems to be a Streaming Asset, but is compressed. If this is a App Bundle build, see README for a possible workaround.", fileName);
                             }
 #endif
                             // we only want uncompressed files
@@ -585,7 +585,14 @@ public static class BetterStreamingAssets
                         else
                         {
                             var fileName = Encoding.UTF8.GetString(header.Filename);
-                            if ( fileName.StartsWith(prefix) )
+                            
+                            if (fileName.EndsWith("/"))
+                            {
+                                // there's some strangeness when it comes to OBB: directories are listed as files
+                                // simply ignoring them should be enough
+                                Debug.Assert(header.UncompressedSize == 0);
+                            }
+                            else if ( fileName.StartsWith(prefix) )
                             {
                                 // ignore normal assets...
                                 if ( fileName.StartsWith(assetsPrefix) )

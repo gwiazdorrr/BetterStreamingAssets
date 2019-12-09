@@ -13,6 +13,10 @@ Support/Feedback: support@dmprog.pl
 Twitter:          @gwiazdorrr
 Support Page:     http://dmprog.pl/unity-plugins/
 
+Note on Android & App Bundles
+------------------
+App Bundles (.aab) builds are bugged when it comes to Streaming Assets. See https://github.com/gwiazdorrr/BetterStreamingAssets/issues/10 for details. The bottom line is:
+!!! Keep all file names in Streaming Assets lowercase! !!!
 
 Usage:
 ------
