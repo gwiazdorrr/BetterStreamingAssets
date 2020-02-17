@@ -90,7 +90,7 @@ namespace Better.StreamingAssets
                     else if ( state == NormalizeState.PrevDoubleDot )
                     {
                         if ( output.Length == 1 )
-                            throw new System.IO.IOException("AAA");
+                            throw new System.IO.IOException("Invalid path: double dot error (before " + i + ")");
 
                         // on level up!
                         int j;
