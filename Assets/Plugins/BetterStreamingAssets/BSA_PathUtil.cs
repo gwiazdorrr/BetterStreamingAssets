@@ -81,7 +81,7 @@ namespace Better.StreamingAssets
 
             for ( int i = startIndex; i <= lastIndexPlus1; ++i )
             {
-                if (i == lastIndexPlus1 || relative[i] == Path.DirectorySeparatorChar || relative[i] == Path.AltDirectorySeparatorChar)
+                if (i == lastIndexPlus1 || relative[i] == '/' || relative[i] == '\\')
                 {
                     if ( state == NormalizeState.PrevSlash || state == NormalizeState.PrevDot )
                     {

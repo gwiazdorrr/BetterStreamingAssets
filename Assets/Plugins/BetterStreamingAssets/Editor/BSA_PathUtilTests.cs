@@ -13,6 +13,7 @@ public class PathUtilTests
 {
     [TestCase(".", ExpectedResult = "/")]
     [TestCase("/", ExpectedResult = "/")]
+    [TestCase("\\", ExpectedResult = "/")]
     [TestCase("////////////", ExpectedResult = "/")]
     [TestCase("././././", ExpectedResult = "/")]
     [TestCase("...", ExpectedResult = "/...")]
@@ -93,7 +94,7 @@ public class PathUtilTests
     {
         foreach (var c in Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()) )
         {
-            if ( c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar )
+            if ( c != '/' && c != '\\' )
                 Assert.IsTrue(!PathUtil.IsValidCharacter(c), "For character {0}", (int)c);
         }
 
