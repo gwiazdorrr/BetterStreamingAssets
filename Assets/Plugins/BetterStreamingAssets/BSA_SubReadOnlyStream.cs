@@ -54,7 +54,7 @@ namespace Better.StreamingAssets
                 if (!m_length.HasValue)
                     m_length = m_actualStream.Length - m_offset;
                 
-                return m_length.Value; ;
+                return m_length.Value;
             }
         }
 
@@ -68,7 +68,7 @@ namespace Better.StreamingAssets
             set
             {
                 ThrowIfDisposed();
-                throw new NotSupportedException();
+                m_position = m_offset + value;
             }
         }
 
