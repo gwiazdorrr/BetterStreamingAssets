@@ -54,7 +54,7 @@ Listing all Streaming Assets in with .xml extension:
 
 Checking if a directory exists:
 
-    Debug.Asset( BetterStreamingAssets.DirectoryExists("Config") );
+    Debug.Assert( BetterStreamingAssets.DirectoryExists("Config") );
 
 Ways of reading a file:
 
