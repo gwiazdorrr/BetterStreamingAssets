@@ -116,7 +116,7 @@ namespace Better.StreamingAssets
             {
                 m_position = m_actualStream.Seek(offset, SeekOrigin.Current);
             }
-            return m_position;
+            return m_position - m_offset;
         }
 
         public override void SetLength(long value)
