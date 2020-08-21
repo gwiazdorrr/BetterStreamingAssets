@@ -19,7 +19,7 @@ using BetterStreamingAssetsImp = BetterStreamingAssets.ApkImpl;
 using BetterStreamingAssetsImp = BetterStreamingAssets.LooseFilesImpl;
 #endif
 
-public static class BetterStreamingAssets
+public static partial class BetterStreamingAssets
 {
     internal struct ReadInfo
     {
@@ -162,6 +162,8 @@ public static class BetterStreamingAssets
     {
         throw new FileNotFoundException("File not found", path);
     }
+
+    static partial void AndroidIsCompressedFileStreamingAsset(string path, ref bool result);
 
 #if UNITY_EDITOR
     internal static class EditorImpl
@@ -577,7 +579,16 @@ public static class BetterStreamingAssets
                             var fileName = Encoding.UTF8.GetString(header.Filename);
                             if (fileName.StartsWith(prefix) && !fileName.StartsWith(assetsPrefix))
                             {
-                                Debug.LogAssertionFormat("BetterStreamingAssets: file {0} seems to be a Streaming Asset, but is compressed. If this is a App Bundle build, see README for a possible workaround.", fileName);
+                                bool isStreamingAsset = true;
+                                AndroidIsCompressedFileStreamingAsset(fileName, ref isStreamingAsset);
+                                if (isStreamingAsset)
+                                {
+                                    Debug.LogAssertionFormat("BetterStreamingAssets: file {0} is where Streaming Assets are put, but is compressed. " +
+                                        "If this is a App Bundle build, see README for a possible workaround. " +
+                                        "If this file is not a Streaming Asset (has been on purpose by hand or by another plug-in), implement " +
+                                        "BetterStreamingAssets.AndroidIsCompressedFileStreamingAsset partial method to prevent this message from appearing again. ",
+                                        fileName);
+                                }
                             }
 #endif
                             // we only want uncompressed files

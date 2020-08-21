@@ -76,4 +76,17 @@ Asset bundles (again, main thread only):
     // async
     var bundleOp = BetterStreamingAssets.LoadAssetBundleAsync(path);
 
- 
+# (Android) False-positive compressed Streaming Assets messages
+
+Streaming Assets end up in the same part of APK as files added by many custom plugins (`assets` directory), so it is impossible to tell whether a compressed file is a Streaming Asset (an indication something has gone terribly wrong) or not. This tool acts conservatively and logs errors whenever it finds a compressed file inside of `assets`, but outside of `assets/bin`. If you are annoyed by this and are certain a compressed file was not meant to be a Streaming Asset, add a file like this in the same assembly as Better Streaming Assets:
+
+    partial class BetterStreamingAssets
+    {
+        static partial void AndroidIsCompressedFileStreamingAsset(string path, ref bool result)
+        {
+            if ( path == "assets/my_custom_plugin_settings.json")
+            {
+                result = false;
+            }
+        }
+    }
