@@ -1,23 +1,12 @@
 {
     "name": "BetterStreamingAssets-Editor",
-    "rootNamespace": "",
     "references": [
-        "BetterStreamingAssets",
-        "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner"
+        "BetterStreamingAssets"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": true,
-    "precompiledReferences": [
-        "nunit.framework.dll"
-    ],
-    "autoReferenced": true,
-    "defineConstraints": [
-        "UNITY_INCLUDE_TESTS",
-        "UNITY_EDITOR"
-    ],
-    "versionDefines": [],
-    "noEngineReferences": false
+    "allowUnsafeCode": false
 }
