@@ -110,7 +110,7 @@ namespace Better.StreamingAssets
             }
             else if ( origin == SeekOrigin.End )
             {
-                m_position = m_actualStream.Seek(m_offset + Length + offset, SeekOrigin.End);
+                m_position = m_actualStream.Seek(m_offset + Length + offset, SeekOrigin.Begin);
             }
             else
             {
