@@ -12,7 +12,7 @@ App Bundles (.aab) builds are bugged when it comes to Streaming Assets. See http
 
 This plugin can be installed in following ways:
 * Select "Add package from git URL..." in the Unity Package Manager and use this URL: `https://github.com/gwiazdorrr/BetterStreamingAssets.git`
-* Clone this repository and copy `Assets/Plugins/BetterStreamingAssets` directory to your project.
+* Clone this repository and copy `Runtime` directory to your project.
 * Download the latest release from the [Asset Store](https://assetstore.unity.com/packages/tools/input-management/better-streaming-assets-103788).
 
 # Usage
