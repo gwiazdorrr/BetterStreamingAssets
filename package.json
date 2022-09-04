@@ -6,5 +6,11 @@
     "documentationUrl": "https://github.com/gwiazdorrr/BetterStreamingAssets",
     "changelogUrl": "https://github.com/gwiazdorrr/BetterStreamingAssets",
     "licensesUrl": "https://github.com/gwiazdorrr/BetterStreamingAssets/blob/master/LICENSE",
-    "description": "Access Streaming Assets directly in an uniform and thread-safe way, with tiny overhead."
+    "description": "Access Streaming Assets directly in an uniform and thread-safe way, with tiny overhead.",
+    "samples": [
+      {
+        "displayName": "Better Streaming Assets Samples",
+        "path": "Samples~/BetterStreamingAssets"
+      }
+    ]
 }
