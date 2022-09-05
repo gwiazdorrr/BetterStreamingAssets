@@ -418,7 +418,6 @@ public static partial class BetterStreamingAssets
             }
 
             List<string> results = new List<string>();
-            string fixedPath = null;
 
             for ( int i = index; i < s_paths.Length; ++i )
             {
@@ -445,17 +444,8 @@ public static partial class BetterStreamingAssets
                 // now do a match
                 if ( filter == null || filter(fileName) )
                 {
-                    var normalizedPart = filePath.Substring(actualDirPath.Length);
-
-                    if ( fixedPath == null )
-                    {
-                        fixedPath = PathUtil.FixTrailingDirectorySeparators(path);
-                        if ( fixedPath == "/" )
-                            fixedPath = string.Empty;
-                    }
-
-                    var result = PathUtil.CombineSlash(fixedPath, normalizedPart);
-                    results.Add(result);
+                    Debug.Assert(filePath[0] == '/');
+                    results.Add(filePath.Substring(1));
                 }
             }
 

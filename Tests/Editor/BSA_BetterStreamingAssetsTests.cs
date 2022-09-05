@@ -29,6 +29,33 @@ namespace Better.StreamingAssets
         private static string[] BundlesLabels = new string[BundlesTypesCount] { "lzma", "lz4", "uncompressed" };
         private static BuildAssetBundleOptions[] BundlesOptions = new BuildAssetBundleOptions[BundlesTypesCount] { BuildAssetBundleOptions.None, BuildAssetBundleOptions.ChunkBasedCompression, BuildAssetBundleOptions.UncompressedAssetBundle };
 
+        [MenuItem("Assets/Better Streaming Assets/Make Android Buld")]
+        public static void CreateAndroidBuild()
+        {
+            const string TestSceneGuid = "2bef88fd675ce3f4fa61ff5f18aa8242";
+
+            // find test scene
+            var path = AssetDatabase.GUIDToAssetPath(TestSceneGuid);
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new System.InvalidOperationException($"Failed to find test scene by guid: {TestSceneGuid}");
+            }
+
+            // build
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions()
+            {
+                scenes = new[] { path },
+                target = BuildTarget.Android,
+                targetGroup = BuildTargetGroup.Android,
+                locationPathName = "BetterStreamingAssetsTest.apk",
+            });
+
+            if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+            {
+                throw new System.InvalidOperationException($"Build failed: {EditorJsonUtility.ToJson(report.summary)}");
+            }
+        }
+
         [MenuItem("Assets/Better Streaming Assets/Generate Test Data")]
         public static void GenerateTestData()
         {
@@ -177,7 +204,7 @@ namespace Better.StreamingAssets
 
             foreach (var size in SizesMB)
             {
-                foreach (var format in new[] { "raw_uncompressable_{0:00}MB.bytes", "raw_uncompressable_{0:00}MB.bytes" })
+                foreach (var format in new[] { "raw_uncompressable_{0:00}mb.bytes", "raw_uncompressable_{0:00}mb.bytes" })
                 {
                     var name = string.Format(format, size);
                     var referenceBytes = BetterStreamingAssets.ReadAllBytes(TestDirName + "/" + name);
@@ -281,11 +308,16 @@ namespace Better.StreamingAssets
         [TestCase("/", "*.lz4", SearchOption.AllDirectories, SizesCount * 2)]
         [TestCase(".", null, SearchOption.AllDirectories, TestFiles)]
         [TestCase("/", null, SearchOption.AllDirectories, TestFiles)]
-        [TestCase("Bundles", null, SearchOption.AllDirectories, 0)]
+        [TestCase("bsatest", null, SearchOption.AllDirectories, 0)]
+        [TestCase("bsatest/", null, SearchOption.AllDirectories, 0)]
+        [TestCase("bsatest/.", null, SearchOption.AllDirectories, 0)]
+        [TestCase("./bsatest/.", null, SearchOption.AllDirectories, 0)]
+        [TestCase("/./bsatest/.", null, SearchOption.AllDirectories, 0)]
+        [TestCase("/bsatest/.", null, SearchOption.AllDirectories, 0)]
         [TestCase("///////", null, SearchOption.AllDirectories, TestFiles)]
         [TestCase("/.", null, SearchOption.AllDirectories, TestFiles)]
         [TestCase("/./././", null, SearchOption.AllDirectories, TestFiles)]
-        [TestCase("Bundles/../Bundles", null, SearchOption.AllDirectories, 0)]
+        [TestCase("bsatest/../bsatest", null, SearchOption.AllDirectories, 0)]
         public void TestFileListInProjectMatchesStreamingAssets(string dir, string pattern, SearchOption opt, int minCount)
         {
             NeedsTestData();
@@ -327,15 +359,7 @@ namespace Better.StreamingAssets
             System.Array.Sort(files);
             System.Array.Sort(otherFiles);
 
-            Assert.AreEqual(files.Length, otherFiles.Length);
-
-            Assert.GreaterOrEqual(files.Length, minCount);
-            Assert.LessOrEqual(files.Length, maxCount);
-
-            for (int i = 0; i < files.Length; ++i)
-            {
-                Assert.AreEqual(files[i], otherFiles[i]);
-            }
+            CollectionAssert.AreEqual(files, otherFiles);
         }
 
         private static string[] GetRealFiles(string nested, string pattern, SearchOption so, bool dirs = false)
