@@ -39,6 +39,12 @@ public static partial class BetterStreamingAssets
         BetterStreamingAssetsImp.Initialize(Application.dataPath, Application.streamingAssetsPath);
     }
 
+    /// <summary>
+    /// Android only: raised when there's a Streaming Asset that is compressed. If there is no handler
+    /// or it returns false, a warning will be logged.
+    /// </summary>
+    public static event Func<string, bool> CompressedStreamingAssetFound;
+
 #if UNITY_EDITOR
     public static void InitializeWithExternalApk(string apkPath)
     {
@@ -571,12 +577,22 @@ public static partial class BetterStreamingAssets
                             {
                                 bool isStreamingAsset = true;
                                 AndroidIsCompressedFileStreamingAsset(fileName, ref isStreamingAsset);
-                                if (isStreamingAsset)
+                                if (!isStreamingAsset)
                                 {
-                                    Debug.LogAssertionFormat("BetterStreamingAssets: file {0} is where Streaming Assets are put, but is compressed. " +
-                                        "If this is a App Bundle build, see README for a possible workaround. " +
-                                        "If this file is not a Streaming Asset (has been on purpose by hand or by another plug-in), implement " +
-                                        "BetterStreamingAssets.AndroidIsCompressedFileStreamingAsset partial method to prevent this message from appearing again. ",
+                                    // partial method ignored it
+                                }
+                                else if (CompressedStreamingAssetFound?.Invoke(fileName) == true)
+                                {
+                                    // handler ignored it
+                                }
+                                else 
+                                { 
+                                    Debug.LogAssertionFormat($"BetterStreamingAssets: file {0} is where Streaming Assets are put, but is compressed. " +
+                                        $"If this is a App Bundle build, see README.md for a possible workaround. " +
+                                        $"If this file is not a Streaming Asset (has been on purpose by hand or by another plug-in), handle " +
+                                        $"{nameof(BetterStreamingAssets)}.{nameof(CompressedStreamingAssetFound)} event or implement " +
+                                        $"{nameof(BetterStreamingAssets)}.{nameof(AndroidIsCompressedFileStreamingAsset)} partial method to prevent " +
+                                        $"this message from appearing again. ",
                                         fileName);
                                 }
                             }
