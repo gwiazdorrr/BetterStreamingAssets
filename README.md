@@ -8,6 +8,12 @@ App Bundles (.aab) builds are bugged when it comes to Streaming Assets. See http
 
 ⚠️ **Keep all file names in Streaming Assets lowercase!** ⚠️
 
+Also, based on local tests with Unity 2020.3, using non-ASCII characters may result in a Streaming Assets file being compressed if one of the following is true:
+- extension contains non-ASCII characters
+- the file is extension-less, but contains non-ASCII characters in its path
+
+⚠️ **Do not use non-ASCII characters in file names** ⚠️
+
 # Getting started
 
 This plugin can be installed in following ways:

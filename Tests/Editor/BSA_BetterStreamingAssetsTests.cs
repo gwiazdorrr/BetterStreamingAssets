@@ -24,7 +24,7 @@ namespace Better.StreamingAssets
         private const string TestPath = "Assets/StreamingAssets/" + TestDirName;
         private const string TestResourcesPath = "Assets/Resources/" + TestDirName;
         private const int TestFiles = SizesCount * 2 + SizesCount * 2 * BundlesTypesCount + TexturesCount * BundlesTypesCount + TexturesCount;
-
+        private readonly bool _apkMode;
         private static int[] SizesMB = new int[SizesCount] { 10, 50 };
         private static string[] BundlesLabels = new string[BundlesTypesCount] { "lzma", "lz4", "uncompressed" };
         private static BuildAssetBundleOptions[] BundlesOptions = new BuildAssetBundleOptions[BundlesTypesCount] { BuildAssetBundleOptions.None, BuildAssetBundleOptions.ChunkBasedCompression, BuildAssetBundleOptions.UncompressedAssetBundle };
@@ -73,7 +73,7 @@ namespace Better.StreamingAssets
             {
                 var random = new System.Random(126556343);
                 long mb = 1024 * 1024;
-                foreach ( var size in SizesMB )
+                foreach (var size in SizesMB)
                 {
                     var p = "Assets/raw_compressable_" + size.ToString("00") + "mb.bytes";
                     paths.Add(p);
@@ -98,7 +98,7 @@ namespace Better.StreamingAssets
 
                     byte[] buffer = new byte[4];
 
-                    for ( int y = 0; y < tex.height; ++y )
+                    for (int y = 0; y < tex.height; ++y)
                     {
                         for (int x = 0; x < tex.width; ++x)
                         {
@@ -124,7 +124,7 @@ namespace Better.StreamingAssets
 
                 try
                 {
-                    for ( int i = 0; i < BundlesLabels.Length; ++i )
+                    for (int i = 0; i < BundlesLabels.Length; ++i)
                     {
                         // now create bundles!
                         var builds = paths.Select(x => new AssetBundleBuild()
@@ -137,7 +137,7 @@ namespace Better.StreamingAssets
                         BuildPipeline.BuildAssetBundles(tempDirPath, builds, BundlesOptions[i], BuildTarget.Android);
                     }
 
-                    foreach ( var file in Directory.GetFiles(tempDirPath).Where(x => Path.GetFileName(x).StartsWith("bundle_") && Path.GetExtension(x) != ".manifest") )
+                    foreach (var file in Directory.GetFiles(tempDirPath).Where(x => Path.GetFileName(x).StartsWith("bundle_") && Path.GetExtension(x) != ".manifest"))
                     {
                         File.Copy(file, Path.Combine(TestResourcesPath, Path.GetFileName(file) + ".bytes"));
                         File.Move(file, Path.Combine(TestPath, Path.GetFileName(file)));
@@ -150,10 +150,10 @@ namespace Better.StreamingAssets
                     Directory.Delete(tempDirPath, true);
                 }
 
-                foreach ( var p in paths )
+                foreach (var p in paths)
                 {
                     var extension = ".bytes";
-                    if ( Path.GetExtension(p) == ".png" )
+                    if (Path.GetExtension(p) == ".png")
                         extension = ".png";
                     File.Copy(p, Path.Combine(TestResourcesPath, Path.GetFileName(p) + extension));
                     File.Move(p, Path.Combine(TestPath, Path.GetFileName(p)));
@@ -168,6 +168,56 @@ namespace Better.StreamingAssets
                 }
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             }
+        }
+
+        [MenuItem("Assets/Better Streaming Assets/Generate Test Data (Wierd Names)")]
+        public static void GenerateWeirdNamesTestData()
+        { 
+            // now weird names
+            var parts = new[]
+            {
+                    "UCASCII",
+                    "lcascii",
+                    "UCNONASCII_Ą",
+                    "lcnonascii_ą",
+                    "UCĄ_NONASCII",
+                    "lcą_nonascii",
+                    "UCWITH.DOT",
+                    "lcwith.dot",
+                    "",
+                };
+
+            var extensions = new[]
+            {
+                    ".lc",
+                    ".UC",
+                    ".Mc",
+                    ".lcą",
+                    ".UCĄ",
+                    ""
+                };
+
+
+            foreach (var folder in parts)
+            {
+                foreach (var name in parts)
+                {
+                    if (string.IsNullOrEmpty(name))
+                        continue;
+
+                    foreach (var extension in extensions)
+                    {
+                        var path = Path.Combine("Assets/StreamingAssets/bsanametest", folder, name + extension);
+                        if (Directory.Exists(path))
+                        {
+                            path += name;
+                        }
+                        CreateZeroFile(path, 1024);
+                    }
+                }
+            }
+
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
         }
 
 
@@ -186,6 +236,13 @@ namespace Better.StreamingAssets
         {
             if (apkMode && !File.Exists(path))
                 Assert.Inconclusive("Build for Android and name output: " + path);
+
+            _apkMode = apkMode;
+
+            BetterStreamingAssets.CompressedStreamingAssetFound += (path) =>
+            {
+                return path.Any(x => !IsAscii(x));
+            };
 
             if ( apkMode )
             {
@@ -238,6 +295,10 @@ namespace Better.StreamingAssets
             var files = GetRealFiles("/", null, SearchOption.AllDirectories);
             foreach (var f in files)
             {
+                if (IsPathExpectedToBeCompressedAnyway(f))
+                {
+                    continue;
+                }
                 var a = File.ReadAllBytes("Assets/StreamingAssets/" + f);
                 var b = BetterStreamingAssets.ReadAllBytes(f);
                 Assert.AreEqual(a.Length, b.Length);
@@ -271,6 +332,10 @@ namespace Better.StreamingAssets
             var files = GetRealFiles("/", null, SearchOption.AllDirectories);
             foreach (var f in files)
             {
+                if (IsPathExpectedToBeCompressedAnyway(f))
+                {
+                    continue;
+                }
                 using (var a = File.OpenRead("Assets/StreamingAssets/" + f))
                 using (var b = BetterStreamingAssets.OpenRead(f))
                 {
@@ -299,10 +364,40 @@ namespace Better.StreamingAssets
             var files = GetRealFiles("/", null, SearchOption.AllDirectories);
             foreach (var f in files)
             {
-                Assert.IsTrue(BetterStreamingAssets.FileExists(f));
+                if (IsPathExpectedToBeCompressedAnyway(f))
+                {
+                    Assert.IsFalse(BetterStreamingAssets.FileExists(f), f);
+                }
+                else
+                {
+                    Assert.IsTrue(BetterStreamingAssets.FileExists(f), f);
+                }
             }
 
             Assert.IsFalse(BetterStreamingAssets.FileExists("FileThatShouldNotExist"));
+        }
+
+        private bool IsPathExpectedToBeCompressedAnyway(string path)
+        {
+            if (_apkMode)
+            {
+                var partToCheck = Path.GetExtension(path);
+                if (partToCheck.Length == 0)
+                {
+                    partToCheck = path;
+                }
+                if (partToCheck.Any(x => !IsAscii(x)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool IsAscii(char c)
+        {
+            return c >= 0 && c < 128;
         }
 
         [TestCase("/", "*.lz4", SearchOption.AllDirectories, SizesCount * 2)]
@@ -353,7 +448,10 @@ namespace Better.StreamingAssets
 
         private void TestGetFiles(string dir, string pattern, SearchOption opt, int minCount, int maxCount)
         {
-            var files = GetRealFiles(dir, pattern, opt);
+            var files = GetRealFiles(dir, pattern, opt)
+                .Where(x => !IsPathExpectedToBeCompressedAnyway(x))
+                .ToArray();
+
             var otherFiles = BetterStreamingAssets.GetFiles(dir, pattern, opt);
 
             System.Array.Sort(files);
@@ -424,6 +522,11 @@ namespace Better.StreamingAssets
 
         private static void CreateZeroFile(string path, long size)
         {
+            var dir = Path.GetDirectoryName(path);
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
             File.WriteAllBytes(path, new byte[size]);
         }
 
