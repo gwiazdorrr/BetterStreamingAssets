@@ -9,11 +9,16 @@ using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEditor.Android;
+using System;
 
 namespace Better.StreamingAssets
 {
     [TestFixture("Assets/StreamingAssets", false)]
     [TestFixture("BetterStreamingAssetsTest.apk", true)]
+    [TestFixture("BetterStreamingAssetsTest_standalones_standalone-armeabi_v7a.apk", true)]
+    [TestFixture("BetterStreamingAssetsTest_splits_base-master.apk", true)]
+
     public class BetterStreamingAssetsTests
     {
         private const int SizesCount = 2;
@@ -28,7 +33,7 @@ namespace Better.StreamingAssets
         private static int[] SizesMB = new int[SizesCount] { 10, 50 };
         private static string[] BundlesLabels = new string[BundlesTypesCount] { "lzma", "lz4", "uncompressed" };
         private static BuildAssetBundleOptions[] BundlesOptions = new BuildAssetBundleOptions[BundlesTypesCount] { BuildAssetBundleOptions.None, BuildAssetBundleOptions.ChunkBasedCompression, BuildAssetBundleOptions.UncompressedAssetBundle };
-
+        
         [MenuItem("Assets/Better Streaming Assets/Make Android Buld")]
         public static void CreateAndroidBuild()
         {
@@ -230,6 +235,70 @@ namespace Better.StreamingAssets
                 Directory.Delete(TestResourcesPath, true);
 
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+        }
+
+        [MenuItem("Assets/Better Streaming Assets/Convert AAB to APKS")]
+        public static void ConvertAABToAPKS()
+        {
+            // find bundle tool
+            var bundleTool = Directory.GetFiles(Path.Combine(AndroidExternalToolsSettings.gradlePath, ".."), "bundletool*.jar").Single();
+            var paths = Directory.GetFiles(".", "*.aab");
+
+            try
+            {
+                foreach (var path in paths)
+                {
+                    if (EditorUtility.DisplayCancelableProgressBar($"AAB->APK", path, Array.IndexOf(paths, path) / (float)paths.Length))
+                    {
+                        break;
+                    }
+
+                    var outPath = $"{path}.apks";
+                    FileUtil.DeleteFileOrDirectory(outPath);
+
+                    var processStartInfo = new System.Diagnostics.ProcessStartInfo()
+                    {
+                        Environment = { { "JAVA_HOME", AndroidExternalToolsSettings.jdkRootPath } },
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        FileName = Path.Combine(AndroidExternalToolsSettings.jdkRootPath, "bin", "java.exe"),
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        Arguments = $"-jar \"{bundleTool}\" build-apks --bundle {path} --output {outPath}"
+                    };
+
+                    var bundleToolProcess = System.Diagnostics.Process.Start(processStartInfo);
+                    bundleToolProcess.WaitForExit();
+
+                    if (bundleToolProcess.ExitCode != 0)
+                    {
+                        Debug.LogError($"Exit code {bundleToolProcess.ExitCode} for {path}:\n{bundleToolProcess.StandardOutput.ReadToEnd()}\n{bundleToolProcess.StandardError.ReadToEnd()}");
+                    }
+
+                    using (var archive = new System.IO.Compression.ZipArchive(File.OpenRead(outPath)))
+                    {
+                        foreach (var entry in archive.Entries)
+                        {
+                            if (entry.FullName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var apkPath = $"{Path.GetFileNameWithoutExtension(path)}_{entry.FullName.Replace('/', '_')}";
+                                FileUtil.DeleteFileOrDirectory(apkPath);
+                                using (var stream = entry.Open())
+                                {
+                                    using (var fileStream = File.Create(apkPath))
+                                    {
+                                        stream.CopyTo(fileStream);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
         }
 
         public BetterStreamingAssetsTests(string path, bool apkMode)
