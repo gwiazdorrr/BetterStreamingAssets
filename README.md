@@ -14,6 +14,10 @@ Also, based on local tests with Unity 2020.3, using non-ASCII characters may res
 
 ⚠️ **Do not use non-ASCII characters in file names** ⚠️
 
+# Note on WebGL
+
+There is currently no support for WebGL. It would require a different approach and a completely async API.
+
 # Getting started
 
 This plugin can be installed in following ways:
