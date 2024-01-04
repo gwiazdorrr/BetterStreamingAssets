@@ -349,23 +349,32 @@ public static partial class BetterStreamingAssets
         public static void Initialize(string dataPath, string streamingAssetsPath)
         {
             s_root = dataPath;
-
+            
             List<string> paths = new List<string>();
             List<PartInfo> parts = new List<PartInfo>();
 
-            GetStreamingAssetsInfoFromJar(s_root, paths, parts);
-
-            if (paths.Count == 0 && !Application.isEditor && Path.GetFileName(dataPath) != "base.apk")
+            
+            if (dataPath.EndsWith("pram-shadow-files"))
             {
-                // maybe split?
-                var newDataPath = Path.GetDirectoryName(dataPath) + "/base.apk";
-                if (File.Exists(newDataPath))
+                Debug.Assert(streamingAssetsPath.EndsWith("pram-shadow-files/assets"));
+                GetStreamingAssetsFromPatch(dataPath, paths, parts);
+            }
+            else
+            {
+                GetStreamingAssetsInfoFromJar(s_root, paths, parts);
+
+                if (paths.Count == 0 && !Application.isEditor && Path.GetFileName(dataPath) != "base.apk")
                 {
-                    s_root = newDataPath;
-                    GetStreamingAssetsInfoFromJar(newDataPath, paths, parts);
+                    // maybe split?
+                    var newDataPath = Path.GetDirectoryName(dataPath) + "/base.apk";
+                    if (File.Exists(newDataPath))
+                    {
+                        s_root = newDataPath;
+                        GetStreamingAssetsInfoFromJar(newDataPath, paths, parts);
+                    }
                 }
             }
-
+            
             s_paths = paths.ToArray();
             s_streamingAssets = parts.ToArray();
         }
@@ -380,10 +389,20 @@ public static partial class BetterStreamingAssets
                 return false;
 
             var dataInfo = s_streamingAssets[index];
-            info.crc32 = dataInfo.crc32;
-            info.offset = dataInfo.offset;
             info.size = dataInfo.size;
-            info.readPath = s_root;
+
+            if (dataInfo.offset < 0)
+            {
+                // this must be a patch release
+                info.readPath = s_root + "/assets" + path;
+            }
+            else
+            {
+                info.crc32 = dataInfo.crc32;
+                info.offset = dataInfo.offset;
+                info.readPath = s_root;
+            }
+
             return true;
         }
 
@@ -540,6 +559,37 @@ public static partial class BetterStreamingAssets
             return s_paths.Length;
         }
 
+        private static void GetStreamingAssetsFromPatch(string dataPath, List<string> paths, List<PartInfo> parts)
+        {
+            string assetsPath = dataPath + "/assets";
+            foreach (var dir in Directory.GetDirectories(assetsPath))
+            {
+                if (dir.EndsWith("/bin"))
+                {
+                    // ignore bin folder, just like when scanning an APK
+                    continue;
+                }
+                
+                foreach (var file in Directory.GetFiles(dir, "*", SearchOption.AllDirectories))
+                {
+                    var relativePath = file.Substring(assetsPath.Length);
+                    var entry = new PartInfo()
+                    {
+                        crc32 = 0,
+                        offset = -1,
+                        size = new FileInfo(file).Length
+                    };
+
+                    var index = paths.BinarySearch(relativePath, StringComparer.OrdinalIgnoreCase);
+                    if ( index >= 0 )
+                        throw new System.InvalidOperationException("Paths duplicate! " + file);
+
+                    paths.Insert(~index, relativePath);
+                    parts.Insert(~index, entry);
+                }
+            }
+        }
+        
         private static void GetStreamingAssetsInfoFromJar(string apkPath, List<string> paths, List<PartInfo> parts)
         {
             using ( var stream = File.OpenRead(apkPath) )
