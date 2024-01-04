@@ -20,11 +20,9 @@ namespace Better.StreamingAssets
     public class BSA_TestSceneGUI : MonoBehaviour
     {
         public UnityEngine.UI.Text InProgressText;
-        public string EditorApkPath = "BetterStreamingAssetsTest.apk";
-        public int RepetitionCount = 10;
-        public bool LogToFile = false;
-
-        private class CoroutineHost : MonoBehaviour { }
+        public string              EditorApkPath   = "BetterStreamingAssetsTest.apk";
+        public int                 RepetitionCount = 10;
+        public bool                LogToFile       = false;
 
         private class TestInfo
         {
@@ -61,7 +59,6 @@ namespace Better.StreamingAssets
         private string m_status = string.Empty;
         private TestType m_testModes = TestType.CheckIfExists;
         private ReadMode m_readModes = ReadMode.WWW;
-        private CoroutineHost coroutineHost;
 
         private Vector2 m_assetsScroll;
         private Vector2 m_resultsScroll;
@@ -176,7 +173,7 @@ namespace Better.StreamingAssets
                 GUI.enabled = m_selectedPaths.Count > 0;
                 if (GUILayout.Button("Test Selected Paths (" + m_selectedPaths.Count + ")"))
                 {
-                    coroutineHost.StartCoroutine(TestAllCoroutine(m_selectedPaths.ToArray(), RepetitionCount, m_readModes, m_testModes, m_results));
+                    StartCoroutine(TestAllCoroutine(m_selectedPaths.ToArray(), RepetitionCount, m_readModes, m_testModes, m_results));
                 }
                 GUI.enabled = true;
 
@@ -232,8 +229,6 @@ namespace Better.StreamingAssets
         private void Initialize()
         {
             m_allStreamingAssets = BetterStreamingAssets.GetFiles("/", "*", SearchOption.AllDirectories);
-
-            coroutineHost = gameObject.AddComponent<CoroutineHost>();
 
             // allocate something for mono heap to grow
             var bytes = new byte[200 * 1024 * 1024];
@@ -299,7 +294,7 @@ namespace Better.StreamingAssets
                                 attempts = attempts,
                             };
 
-                            yield return coroutineHost.StartCoroutine(ErrorCatchingCoroutine(TestHarness(readMode, path, testType, attempts,
+                            yield return StartCoroutine(ErrorCatchingCoroutine(TestHarness(readMode, path, testType, attempts,
                                 (duration, bytes, memory, maxMemory, names) =>
                                 {
                                     testInfo.duration = duration;
