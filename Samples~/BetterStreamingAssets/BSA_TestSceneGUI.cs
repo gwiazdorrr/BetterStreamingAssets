@@ -219,7 +219,7 @@ namespace Better.StreamingAssets
 #if UNITY_EDITOR
                 if (BetterStreamingAssets.Root == EditorApkPath)
                 {
-                    return "jar:" + new Uri(EditorApkPath).AbsoluteUri + "!/assets";
+                    return EditorApkPath;
                 }
 #endif
                 return Application.streamingAssetsPath;
@@ -304,6 +304,7 @@ namespace Better.StreamingAssets
                                 }),
                                 ex =>
                                 {
+                                    Debug.LogException(ex);
                                     testInfo.error = ex;
                                 }
                             ));
@@ -377,7 +378,7 @@ namespace Better.StreamingAssets
             string[] assetNames = null;
 
             var streamingAssetsUrl = Path.Combine(StreamingAssetsPath, path.TrimStart('/')).Replace('\\', '/');
-
+            
             long bytesRead = 0;
             long maxMemoryPeak = 0;
             long totalMemoryPeaks = 0;
@@ -406,11 +407,12 @@ namespace Better.StreamingAssets
 
                         Profiler.BeginSample(testType.ToString());
 
+                        if (!string.IsNullOrEmpty(www.error))
+                            throw new System.Exception(www.error);
+                        
                         switch (testType)
                         {
                             case TestType.CheckIfExists:
-                                if (!string.IsNullOrEmpty(www.error))
-                                    throw new System.Exception(www.error);
                                 break;
                             case TestType.LoadBytes:
                                 bytesRead += www.bytes.Length;
@@ -467,11 +469,12 @@ namespace Better.StreamingAssets
 
                     Profiler.BeginSample(testType.ToString());
 
+                    if (!string.IsNullOrEmpty(www.error))
+                        throw new System.Exception(www.error);
+                    
                     switch (testType)
                     {
                         case TestType.CheckIfExists:
-                            if (!string.IsNullOrEmpty(www.error))
-                                throw new System.Exception(www.error);
                             break;
                         case TestType.LoadBytes:
                             bytesRead += (int)www.downloadedBytes;

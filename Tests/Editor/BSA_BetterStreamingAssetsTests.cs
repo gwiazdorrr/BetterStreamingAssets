@@ -34,7 +34,7 @@ namespace Better.StreamingAssets
         private static string[] BundlesLabels = new string[BundlesTypesCount] { "lzma", "lz4", "uncompressed" };
         private static BuildAssetBundleOptions[] BundlesOptions = new BuildAssetBundleOptions[BundlesTypesCount] { BuildAssetBundleOptions.None, BuildAssetBundleOptions.ChunkBasedCompression, BuildAssetBundleOptions.UncompressedAssetBundle };
         
-        [MenuItem("Assets/Better Streaming Assets/Make Android Buld")]
+        [MenuItem("Assets/Better Streaming Assets/Make Android Build")]
         public static void CreateAndroidBuild()
         {
             const string TestSceneGuid = "2bef88fd675ce3f4fa61ff5f18aa8242";
