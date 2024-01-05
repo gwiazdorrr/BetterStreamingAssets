@@ -43,7 +43,12 @@ public static partial class BetterStreamingAssets
     /// Android only: raised when there's a Streaming Asset that is compressed. If there is no handler
     /// or it returns false, a warning will be logged.
     /// </summary>
-    public static event Func<string, bool> CompressedStreamingAssetFound;
+    public static event Func<string, bool> CompressedStreamingAssetFound
+#if UNITY_EDITOR || UNITY_ANDROID
+        ;
+#else
+        { add { } remove { } }
+#endif
 
 #if UNITY_EDITOR
     public static void InitializeWithExternalApk(string apkPath)
