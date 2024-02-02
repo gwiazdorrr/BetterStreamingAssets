@@ -39,6 +39,11 @@ public static partial class BetterStreamingAssets
         BetterStreamingAssetsImp.Initialize(Application.dataPath, Application.streamingAssetsPath);
     }
 
+    public static void Initialize(string dataPath, string streamingAssetsPath)
+    {
+        BetterStreamingAssetsImp.Initialize(dataPath, streamingAssetsPath);
+    }
+
     /// <summary>
     /// Android only: raised when there's a Streaming Asset that is compressed. If there is no handler
     /// or it returns false, a warning will be logged.
