@@ -60,6 +60,11 @@ namespace Better.StreamingAssets
                 return a + '/' + b;
         }
 
+        public static string ForceSlash(string path)
+        {
+            return path.Replace('\\', '/');
+        }
+
         public static string NormalizeRelativePath(string relative, bool forceTrailingSlash = false)
         {
             if (string.IsNullOrEmpty(relative))
