@@ -160,5 +160,20 @@ namespace Better.StreamingAssets
         {
             return new Regex("^" + Regex.Escape(pattern).Replace(@"\*", ".*").Replace(@"\?", ".") + "$", RegexOptions.IgnoreCase);
         }
+
+        public static bool TryParseAndroidStreamingAssetPath(string path, out string apkPath) 
+        {
+            // according to the docs: https://docs.unity3d.com/2022.3/Documentation/Manual/StreamingAssets.html
+            // Android uses files inside a compressed APK / JAR file, "jar:file://" + Application.dataPath + "!/assets".
+            var match = Regex.Match(path, @"^jar:file://(.+)!/assets$");
+            if (match.Success) 
+            {
+                apkPath = match.Groups[1].Value;
+                return true;
+            }
+
+            apkPath = null;
+            return false;
+        }
     }
 }

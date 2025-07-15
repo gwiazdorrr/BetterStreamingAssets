@@ -378,13 +378,9 @@ public static partial class BetterStreamingAssets
             }
             else
             {
-                // streamingAssets path format : jar:file///data/app/[...].apk!/assets
-                // format expected by s_root : /data/app/[...].apk
-                var pathRegex = new Regex(@"^jar:file://(.+)!/assets$");
-                var match = pathRegex.Match(streamingAssetsPath);
-                if (match.Success)
+                if (PathUtil.TryParseAndroidStreamingAssetPath(streamingAssetsPath, out s_root)) 
                 {
-                    s_root = match.Groups[1].Value;
+                    // using the path from StreamingAssets path
                 }
 
                 GetStreamingAssetsInfoFromJar(s_root, paths, parts);

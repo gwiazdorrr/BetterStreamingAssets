@@ -131,4 +131,21 @@ public class PathUtilTests
     {
         Assert.AreEqual(expected, PathUtil.WildcardToRegex(pattern).IsMatch(match));
     }
+
+    [TestCase("jar:file:///data/app/com.example.app-1/base.apk!/assets", "/data/app/com.example.app-1/base.apk")]
+    [TestCase("jar:file:///data/app/com.example.app-1/base.apk!/assets/", null)]
+    [TestCase("jar:file:///data/app/com.example.app-1/base.apk!/assets/assets", null)]
+    [TestCase("jar:file:///data/app/com.example.app-1/base.apk!/assets/asset.txt", null)]
+    [TestCase("jar:file:///data/app/com.example.app-1/base.apk!/assetsX", null)]
+    [TestCase("jar:file:///data/app/com.example.app-1/base.apk!/asset", null)]
+    [TestCase("jar:file:///data/app/com.example.app-1/base.apk!/assetsX/asset.txt", null)]
+    [TestCase("file:///data/app/com.example.app-1/base.apk!/assets", null)]
+    [TestCase("jar:file:///data/app/com.example.app-1/base.apk!assets", null)]
+    [TestCase("jar:file:///data/app/com.example.app-1/base.apk!/assetsX/", null)]
+    [TestCase("jar:file://A!/assets", "A")]
+    public void TestTryGetStreamingATryParseAndroidStreamingAssetPath(string path, string expected) 
+    {
+        PathUtil.TryParseAndroidStreamingAssetPath(path, out string result);
+        Assert.AreEqual(expected, result);
+    }
 }
