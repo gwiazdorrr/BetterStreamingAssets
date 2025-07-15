@@ -378,6 +378,15 @@ public static partial class BetterStreamingAssets
             }
             else
             {
+                // streamingAssets path format : jar:file///data/app/[...].apk!/assets
+                // format expected by s_root : /data/app/[...].apk
+                var pathRegex = new Regex(@"^jar:file://(.+)!/assets$");
+                var match = pathRegex.Match(streamingAssetsPath);
+                if (match.Success)
+                {
+                    s_root = match.Groups[1].Value;
+                }
+
                 GetStreamingAssetsInfoFromJar(s_root, paths, parts);
 
                 if (paths.Count == 0 && !Application.isEditor && Path.GetFileName(dataPath) != "base.apk")
